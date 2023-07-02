@@ -1,0 +1,41 @@
+version: '3.4'
+
+networks:
+  cloudcustomersnetwork:
+
+services:
+  cloudcustomersDB:
+    container_name: cloudcustomers.db.sqlserver
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+        - ACCEPT_EULA=Y
+        - MSSQL_SA_PASSWORD=Teste@123456
+    ports:
+        - "1433:1433"
+    networks:
+        - cloudcustomersnetwork
+
+  cloudcustomers.db:
+    container_name: cloudcustomers.db
+    image: mysql:8.0.33
+    environment:
+        MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
+    volumes:
+        - ./.docker/mysql/dbdata:/var/lib/mysql
+    ports:
+        - "3388:3306"
+    networks:
+        - cloudcustomersnetwork
+
+  cloudcustomers.api:
+    container_name: cloudcustomers.api 
+    image: ${DOCKER_REGISTRY-}cloudcustomersapi
+    build:
+      context: .
+      dockerfile: CloudCustomers.API/Dockerfile
+    ports:
+        - 8001:80
+    depends_on:
+        - cloudcustomersDB
+    networks:
+        - cloudcustomersnetwork
